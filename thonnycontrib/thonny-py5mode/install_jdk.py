@@ -71,10 +71,9 @@ def jdk_install_exists() -> bool:
                 is_valid_jdk_path(jdk_path):
                 # Set a local JAVA_HOME to the detected JDK in THONNY_USER_DIR:
                 set_java_home(jdk_path)
-
                 return True # Found a valid JDK subfolder in THONNY_USER_DIR
 
-    return False # Neither existing JAVA_HOME nor any JDK in THONNY_USER_DIR
+    return False # No JDK with required version found in THONNY_USER_DIR
 
 
 def set_java_home(jdk_path: Path | str):
