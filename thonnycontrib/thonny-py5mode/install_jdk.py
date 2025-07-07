@@ -53,7 +53,7 @@ def is_java_home_set() -> bool:
         if (match := _JDK_PATTERN.search(java_home)):
             system_jdk = match.group(1) # Get JDK version from 1st match group
 
-        if jdk_version_validation(java_home, system_jdk):
+        if is_valid_jdk_version(system_jdk) and is_valid_jdk_path(java_home):
             return True # Version is numeric and meets the minimum requirement
 
     return False # No JAVA_HOME pointing to a required JDK was found
@@ -63,15 +63,25 @@ def jdk_install_exists() -> bool:
     '''Check Thonny's user folder for a JDK installation subfolder'''
     for subfolder in get_all_thonny_folders():
         if (match := _JDK_PATTERN.search(subfolder)):
-            jdk_version = match.group(1) # Get JDK version from 1st match group
+            jdk_ver = match.group(1) # Get JDK version from 1st match group
             jdk_path = _THONNY_USER_PATH / subfolder
 
-            if jdk_version_validation(jdk_path, jdk_version):
+            if is_valid_jdk_version(jdk_ver) and is_valid_jdk_path(jdk_path):
                 # Set a local JAVA_HOME to the detected JDK in THONNY_USER_DIR:
                 set_java_home(jdk_path)
                 return True # Found a valid JDK subfolder in THONNY_USER_DIR
 
     return False # No JDK with required version found in THONNY_USER_DIR
+
+
+def is_valid_jdk_version(version: str) -> bool:
+    '''Check if JDK version meets minimum version requirement.'''
+    return version.isdigit() and int(version) >= _REQUIRE_JDK
+
+
+def is_valid_jdk_path(path: Path | str) -> bool:
+    '''Check if the given path points to a JDK install with a usable Java.'''
+    return Path(path, 'bin', 'java').is_file()
 
 
 def set_java_home(jdk_path: Path | str):
@@ -84,18 +94,6 @@ def set_java_home(jdk_path: Path | str):
         env_vars.append(jdk_path)
         workbench.set_option('general.environment', env_vars)
         showinfo('JAVA_HOME', jdk_path, master=workbench)
-
-
-def jdk_version_validation(path: Path | str, version: str) -> bool:
-    '''Return True if JDK version meets minimum version requirement and
-    a file "java" exists in the path folder.'''
-    return version.isdigit() and int(version) >= _REQUIRE_JDK and\
-        is_valid_jdk_path(path)
-
-
-def is_valid_jdk_path(path: Path | str) -> bool:
-    '''Check if the given path points to a JDK install with a usable Java.'''
-    return Path(path, 'bin', 'java').is_file()
 
 
 def get_platform_specific_jdk_path(path: Path | str) -> str:
