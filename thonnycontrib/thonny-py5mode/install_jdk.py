@@ -69,7 +69,7 @@ def get_thonny_jdk_install() -> Path | Literal['']:
     for subfolder in get_all_thonny_folders():
         if (match := _JDK_PATTERN.search(subfolder)):
             jdk_ver = match.group(1) # Get JDK version from 1st match group
-            jdk_path = _THONNY_USER_PATH / subfolder
+            jdk_path = adjust_jdk_path(_THONNY_USER_PATH / subfolder)
 
             if is_valid_jdk_version(jdk_ver) and is_valid_jdk_path(jdk_path):
                 return jdk_path # Found a valid JDK subfolder in THONNY_USER_DIR
@@ -77,37 +77,42 @@ def get_thonny_jdk_install() -> Path | Literal['']:
     return '' # No JDK with required version found in THONNY_USER_DIR
 
 
-def is_valid_jdk_version(version: str) -> bool:
+def is_valid_jdk_version(jdk_version: str) -> bool:
     '''Check if JDK version meets minimum version requirement.'''
-    return version.isdigit() and int(version) >= _REQUIRE_JDK
+    return jdk_version.isdigit() and int(jdk_version) >= _REQUIRE_JDK
 
 
-def is_valid_jdk_path(path: Path | str) -> bool:
+def is_valid_jdk_path(jdk_path: Path | str) -> bool:
     '''Check if the given path points to a JDK install with a usable Java.'''
-    return Path(path, 'bin', 'java').is_file()
+    return Path(jdk_path, 'bin', 'java').is_file()
 
 
 def set_java_home(jdk_path: Path | str):
     '''Add JDK path to config file (tools > options > general > env vars).'''
-    jdk_path = get_platform_specific_jdk_path(jdk_path)
+    jdk_path_entry = create_java_home_entry_from_path(jdk_path)
     workbench = get_workbench()
     env_vars: list[str] = workbench.get_option('general.environment')
 
-    if jdk_path not in env_vars:
-        env_vars.append(jdk_path)
+    if jdk_path_entry not in env_vars:
+        env_vars.append(jdk_path_entry)
         workbench.set_option('general.environment', env_vars)
-        showinfo('JAVA_HOME', jdk_path, master=workbench)
+        showinfo('JAVA_HOME', jdk_path_entry, master=workbench)
 
 
-def get_platform_specific_jdk_path(path: Path | str) -> str:
-    '''Return properly formatted JAVA_HOME string based on platform.'''
-    path = Path(path)
+def create_java_home_entry_from_path(jdk_path: Path | str) -> str:
+    '''Adjust JDK path and prefix it with "JAVA_HOME="'''
+    return f'JAVA_HOME={adjust_jdk_path(jdk_path)}'
 
-    # if Mac ARM system, add "/Contents/Home/" to JDK path:
+
+def adjust_jdk_path(jdk_path: Path | str) -> Path:
+    '''Adjust JDK path for the specificity of current platform.'''
+    jdk_path = Path(jdk_path)
+
+    # if ARM MacOS, add "/Contents/Home/" to JDK path:
     if jdk.OS is jdk.OperatingSystem.MAC and jdk.ARCH is jdk.Architecture.ARM:
-        path = path / 'Contents' / 'Home'
+        jdk_path = jdk_path / 'Contents' / 'Home'
 
-    return f'JAVA_HOME={path}'
+    return jdk_path
 
 
 def get_all_thonny_folders() -> Generator[str]:
