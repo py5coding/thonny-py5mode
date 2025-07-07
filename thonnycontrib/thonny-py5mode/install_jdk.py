@@ -100,7 +100,7 @@ def set_java_home(jdk_path: Path | str):
 
 
 def create_java_home_entry_from_path(jdk_path: Path | str) -> str:
-    '''Adjust JDK path and prefix it with "JAVA_HOME="'''
+    '''Adjust JDK path and prefix it with "JAVA_HOME=".'''
     return f'JAVA_HOME={adjust_jdk_path(jdk_path)}'
 
 
