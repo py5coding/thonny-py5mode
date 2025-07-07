@@ -63,7 +63,7 @@ def is_java_home_set() -> bool:
     return False # No JAVA_HOME pointing to a required JDK was found
 
 
-def get_thonny_jdk_install() -> (Path | Literal['']):
+def get_thonny_jdk_install() -> Path | Literal['']:
     '''Check Thonny's user folder for a JDK installation subfolder
     and return its path. Otherwise, return an empty string.'''
     for subfolder in get_all_thonny_folders():
