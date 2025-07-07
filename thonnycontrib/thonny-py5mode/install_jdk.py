@@ -87,6 +87,8 @@ def set_java_home(jdk_path: Path | str):
 
 
 def jdk_version_validation(path: Path | str, version: str) -> bool:
+    '''Return True if JDK version meets minimum version requirement and
+    a file "java" exists in the path folder.'''
     return version.isdigit() and int(version) >= _REQUIRE_JDK and\
         is_valid_jdk_path(path)
 
