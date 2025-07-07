@@ -53,8 +53,7 @@ def is_java_home_set() -> bool:
         if (match := _JDK_PATTERN.search(java_home)):
             system_jdk = match.group(1) # Get JDK version from 1st match group
 
-        if system_jdk.isdigit() and int(system_jdk) >= _REQUIRE_JDK and\
-            is_valid_jdk_path(java_home):
+        if jdk_version_validation(java_home, system_jdk):
             return True # Version is numeric and meets the minimum requirement
 
     return False # No JAVA_HOME pointing to a required JDK was found
@@ -67,8 +66,7 @@ def jdk_install_exists() -> bool:
             jdk_version = match.group(1) # Get JDK version from 1st match group
             jdk_path = _THONNY_USER_PATH / subfolder
 
-            if jdk_version.isdigit() and int(jdk_version) >= _REQUIRE_JDK and\
-                is_valid_jdk_path(jdk_path):
+            if jdk_version_validation(jdk_path, jdk_version):
                 # Set a local JAVA_HOME to the detected JDK in THONNY_USER_DIR:
                 set_java_home(jdk_path)
                 return True # Found a valid JDK subfolder in THONNY_USER_DIR
@@ -86,6 +84,11 @@ def set_java_home(jdk_path: Path | str):
         env_vars.append(jdk_path)
         workbench.set_option('general.environment', env_vars)
         showinfo('JAVA_HOME', jdk_path, master=workbench)
+
+
+def jdk_version_validation(path: Path | str, version: str) -> bool:
+    return version.isdigit() and int(version) >= _REQUIRE_JDK and\
+        is_valid_jdk_path(path)
 
 
 def is_valid_jdk_path(path: Path | str) -> bool:
