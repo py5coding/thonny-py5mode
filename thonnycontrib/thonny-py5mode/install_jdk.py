@@ -98,7 +98,7 @@ def get_platform_specific_jdk_path(path: Path | str) -> str:
     path = Path(path)
 
     # if Mac ARM system, add "/Contents/Home/" to JDK path:
-    if jdk.OS == jdk.OperatingSystem.MAC and jdk.ARCH == jdk.Architecture.ARM:
+    if jdk.OS is jdk.OperatingSystem.MAC and jdk.ARCH is jdk.Architecture.ARM:
         path = path / 'Contents' / 'Home'
 
     return f'JAVA_HOME={path}'
@@ -180,7 +180,7 @@ class JdkDialog(ui_utils.CommonDialog):
 
         self.title(self._TITLE)
         self.resizable(height=tk.FALSE, width=tk.FALSE)
-        self.protocol('WM_DELETE_WINDOW', '{#}') # No window close button
+        self.protocol('WM_DELETE_WINDOW', '{#}') # Block window close button
 
         # Display install message:
         message_label = ttk.Label(self.main_frame, text=self._INSTALL_JDK)
