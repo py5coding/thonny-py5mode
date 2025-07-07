@@ -12,6 +12,7 @@ from threading import Thread
 from os import environ as env, scandir, rename
 from os.path import islink, realpath
 
+from typing import Literal
 from collections.abc import Generator, Iterator
 
 import tkinter as tk
@@ -38,8 +39,11 @@ def install_jdk(): # Module's main entry-point function
     '''Call this function from where this module is imported.'''
     if is_java_home_set(): return # JAVA_HOME points to a required JDK version
 
-    if not jdk_install_exists(): # If Thonny doesn't have a proper JDK version
-        ui_utils.show_dialog(JdkDialog(get_workbench())) # ask to download it...
+    # Set a local JAVA_HOME to the detected JDK found in THONNY_USER_DIR:
+    if (path := get_thonny_jdk_install()): set_java_home(path)
+
+    else: # Otherwise, if Thonny doesn't have a proper JDK version:
+        ui_utils.show_dialog(JdkDialog(get_workbench())) # ask to download it
 
 
 def is_java_home_set() -> bool:
@@ -59,19 +63,18 @@ def is_java_home_set() -> bool:
     return False # No JAVA_HOME pointing to a required JDK was found
 
 
-def jdk_install_exists() -> bool:
-    '''Check Thonny's user folder for a JDK installation subfolder'''
+def get_thonny_jdk_install() -> (Path | Literal['']):
+    '''Check Thonny's user folder for a JDK installation subfolder
+    and return its path. Otherwise, return an empty string.'''
     for subfolder in get_all_thonny_folders():
         if (match := _JDK_PATTERN.search(subfolder)):
             jdk_ver = match.group(1) # Get JDK version from 1st match group
             jdk_path = _THONNY_USER_PATH / subfolder
 
             if is_valid_jdk_version(jdk_ver) and is_valid_jdk_path(jdk_path):
-                # Set a local JAVA_HOME to the detected JDK in THONNY_USER_DIR:
-                set_java_home(jdk_path)
-                return True # Found a valid JDK subfolder in THONNY_USER_DIR
+                return jdk_path # Found a valid JDK subfolder in THONNY_USER_DIR
 
-    return False # No JDK with required version found in THONNY_USER_DIR
+    return '' # No JDK with required version found in THONNY_USER_DIR
 
 
 def is_valid_jdk_version(version: str) -> bool:
