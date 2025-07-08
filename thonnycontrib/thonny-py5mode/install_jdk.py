@@ -13,7 +13,7 @@ from os import environ as env, scandir, rename
 from os.path import islink, realpath
 
 from typing import Literal
-from collections.abc import Generator, Iterator
+from collections.abc import Iterator
 
 import tkinter as tk
 from tkinter import ttk
@@ -118,10 +118,10 @@ def adjust_jdk_path(jdk_path: PurePath | str) -> Path:
     return jdk_path
 
 
-def get_all_thonny_folders() -> Generator[str]:
-    '''Yield subfolder names within Thonny's user folder'''
+def get_all_thonny_folders() -> list[str]:
+    """Return reverse-sorted names of subfolders within Thonny's user folder."""
     with scandir(THONNY_USER_DIR) as entries:
-        yield from (e.name for e in entries if e.is_dir())
+        return sorted((e.name for e in entries if e.is_dir()), reverse=True)
 
 
 def get_all_thonny_folder_paths() -> Iterator[Path]:
