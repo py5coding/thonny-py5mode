@@ -6,7 +6,7 @@ import re
 import shutil
 import jdk
 
-from pathlib import Path
+from pathlib import Path, PurePath
 from threading import Thread
 
 from os import environ as env, scandir, rename
@@ -82,12 +82,12 @@ def is_valid_jdk_version(jdk_version: str) -> bool:
     return jdk_version.isdigit() and int(jdk_version) >= _REQUIRE_JDK
 
 
-def is_valid_jdk_path(jdk_path: Path | str) -> bool:
+def is_valid_jdk_path(jdk_path: PurePath | str) -> bool:
     '''Check if the given path points to a JDK install with a usable Java.'''
     return Path(jdk_path, 'bin', 'java').is_file()
 
 
-def set_java_home(jdk_path: Path | str):
+def set_java_home(jdk_path: PurePath | str):
     '''Add JDK path to config file (tools > options > general > env vars).'''
     jdk_path_entry = create_java_home_entry_from_path(jdk_path)
     workbench = get_workbench()
@@ -99,12 +99,12 @@ def set_java_home(jdk_path: Path | str):
         showinfo('JAVA_HOME', jdk_path_entry, master=workbench)
 
 
-def create_java_home_entry_from_path(jdk_path: Path | str) -> str:
+def create_java_home_entry_from_path(jdk_path: PurePath | str) -> str:
     '''Adjust JDK path and prefix it with "JAVA_HOME=".'''
     return f'JAVA_HOME={adjust_jdk_path(jdk_path)}'
 
 
-def adjust_jdk_path(jdk_path: Path | str) -> Path:
+def adjust_jdk_path(jdk_path: PurePath | str) -> Path:
     '''Adjust JDK path for the specificity of current platform.'''
     jdk_path = Path(jdk_path)
 
