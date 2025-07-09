@@ -13,7 +13,7 @@ from os import environ as env, scandir, rename
 from os.path import islink, realpath
 
 from typing import Literal
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 import tkinter as tk
 from tkinter import ttk
@@ -80,6 +80,17 @@ def get_thonny_jdk_install() -> Path | Literal['']:
     return '' # No JDK with required version found in THONNY_USER_DIR
 
 
+def get_all_thonny_folders() -> list[str]:
+    """Return reverse-sorted names of subfolders within Thonny's user folder."""
+    with scandir(THONNY_USER_DIR) as entries:
+        return sorted((e.name for e in entries if e.is_dir()), reverse=True)
+
+
+def get_all_thonny_folder_paths() -> Iterator[Path]:
+    '''Find all subfolder paths within Thonny's user folder'''
+    return filter(Path.is_dir, _THONNY_USER_PATH.iterdir())
+
+
 def is_valid_jdk_version(jdk_version: str) -> bool:
     '''Check if JDK version meets minimum version requirement.'''
     return jdk_version.isdigit() and int(jdk_version) >= _REQUIRE_JDK
@@ -97,6 +108,7 @@ def set_java_home(jdk_path: PurePath | str):
     env_vars: list[str] = workbench.get_option('general.environment')
 
     if jdk_path_entry not in env_vars:
+        env_vars = [*drop_all_java_home_entries(env_vars)]
         env_vars.append(jdk_path_entry)
         workbench.set_option('general.environment', env_vars)
         showinfo('JAVA_HOME', jdk_path_entry, master=workbench)
@@ -111,22 +123,21 @@ def adjust_jdk_path(jdk_path: PurePath | str) -> Path:
     '''Adjust JDK path for the specificity of current platform.'''
     jdk_path = Path(jdk_path)
 
-    # if ARM MacOS, add "/Contents/Home/" to JDK path:
-    if jdk.OS is jdk.OperatingSystem.MAC and jdk.ARCH is jdk.Architecture.ARM:
+    # if MacOS, append "/Contents/Home/" to form the actual JDK path for it:
+    if jdk.OS is jdk.OperatingSystem.MAC:
         jdk_path = jdk_path / 'Contents' / 'Home'
 
     return jdk_path
 
 
-def get_all_thonny_folders() -> list[str]:
-    """Return reverse-sorted names of subfolders within Thonny's user folder."""
-    with scandir(THONNY_USER_DIR) as entries:
-        return sorted((e.name for e in entries if e.is_dir()), reverse=True)
+def drop_all_java_home_entries(entries: Sequence[str]) -> Iterator[str]:
+    '''Filter out existing entries which start with "JAVA_HOME=".'''
+    return filter(_non_java_home_predicate, entries)
 
 
-def get_all_thonny_folder_paths() -> Iterator[Path]:
-    '''Find all subfolder paths within Thonny's user folder'''
-    return filter(Path.is_dir, _THONNY_USER_PATH.iterdir())
+def _non_java_home_predicate(entry: str) -> bool:
+    '''Check if the entry doesn't start with "JAVA_HOME=".'''
+    return not entry.upper().startswith('JAVA_HOME=')
 
 
 class DownloadJDK(Thread):
