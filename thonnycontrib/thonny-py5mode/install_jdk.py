@@ -111,7 +111,7 @@ def set_java_home(jdk_path: PurePath | str):
         env_vars = [*drop_all_java_home_entries(env_vars)]
         env_vars.append(jdk_path_entry)
         workbench.set_option('general.environment', env_vars)
-        showinfo('JAVA_HOME', jdk_path_entry, master=workbench)
+        showinfo('JAVA_HOME', jdk_path_entry, parent=workbench)
 
 
 def create_java_home_entry_from_path(jdk_path: PurePath | str) -> str:
@@ -289,4 +289,4 @@ class JdkDialog(ui_utils.CommonDialog):
         progress.stop()
         self._close()
 
-        showinfo(self._DONE, self._MSG, master=get_workbench())
+        showinfo(self._DONE, self._MSG, parent=get_workbench())
