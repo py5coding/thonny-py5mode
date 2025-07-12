@@ -98,7 +98,8 @@ def is_valid_jdk_version(jdk_version: str) -> bool:
 
 def is_valid_jdk_path(jdk_path: PurePath | str) -> bool:
     '''Check if the given path points to a JDK install with a usable Java.'''
-    return Path(jdk_path, 'bin', 'java').is_file()
+    java_executable = jdk._IS_WINDOWS and 'java.exe' or 'java'
+    return Path(jdk_path, 'bin', java_executable).is_file()
 
 
 def set_java_home(jdk_path: PurePath | str):
