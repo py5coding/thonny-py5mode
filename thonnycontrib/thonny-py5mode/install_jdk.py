@@ -111,6 +111,7 @@ def set_java_home(jdk_path: PurePath | str):
         env_vars = [*drop_all_java_home_entries(env_vars)]
         env_vars.append(jdk_path_entry)
         workbench.set_option('general.environment', env_vars)
+        env['JAVA_HOME'] = str(jdk_path)
         showinfo('JAVA_HOME', jdk_path_entry, parent=workbench)
 
 
@@ -165,9 +166,7 @@ class DownloadJDK(Thread):
                 rename(path, _JDK_PATH)
                 break
 
-        # Set JAVA_HOME:
         set_java_home(_JDK_HOME)
-        env['JAVA_HOME'] = _JDK_HOME
 
 
 class JdkDialog(ui_utils.CommonDialog):
