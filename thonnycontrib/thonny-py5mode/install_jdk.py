@@ -13,7 +13,7 @@ from os import environ as env, scandir, rename
 from os.path import islink, realpath
 
 from typing import Literal
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator
 
 import tkinter as tk
 from tkinter import ttk
@@ -132,7 +132,7 @@ def adjust_jdk_path(jdk_path: PurePath | str) -> PurePath:
     return jdk_path
 
 
-def drop_all_java_home_entries(entries: Sequence[str]) -> Iterator[str]:
+def drop_all_java_home_entries(entries: Iterable[str]) -> Iterator[str]:
     '''Filter out existing entries which start with "JAVA_HOME=".'''
     return filter(_non_java_home_predicate, entries)
 
