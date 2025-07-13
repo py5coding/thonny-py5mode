@@ -139,7 +139,7 @@ def drop_all_java_home_entries(entries: Sequence[str]) -> Iterator[str]:
 
 def _non_java_home_predicate(entry: str) -> bool:
     '''Check if the entry doesn't start with "JAVA_HOME=".'''
-    return not entry.upper().startswith('JAVA_HOME=')
+    return not entry.startswith('JAVA_HOME=')
 
 
 class DownloadJDK(Thread):
@@ -174,7 +174,7 @@ class JdkDialog(ui_utils.CommonDialog):
     '''User-facing dialog prompting install of required JDK for py5 sketches.
 
     - Presents user with option to proceed or cancel the JDK installation.
-    - Displays an indeterminate progress bar during download.
+    - Displays a horizontal indeterminate-sized progress bar during download.
     - Launches a background thread to handle installation tasks.
     - Shows a success message when installation is complete.
     '''
@@ -252,11 +252,7 @@ class JdkDialog(ui_utils.CommonDialog):
         dl_label.grid(row=1, columnspan=2, pady=self._PAD)
 
         # Progress bar:
-        progress_bar = ttk.Progressbar(
-            self.main_frame,
-            orient=tk.HORIZONTAL,
-            mode='indeterminate'
-        )
+        progress_bar = ttk.Progressbar(self.main_frame, mode='indeterminate')
 
         progress_bar.grid(
             row=2, column=0, columnspan=2,
@@ -274,12 +270,6 @@ class JdkDialog(ui_utils.CommonDialog):
         self._monitor(download_thread, progress_bar)
 
 
-    def _close(self):
-        '''Fully shutdown the JdkDialog instance.'''
-        self.destroy()
-        self.main_frame = self.ok_button = self.cancel_button = None
-
-
     def _monitor(self, download: Thread, progress: ttk.Progressbar):
         '''Animate progress bar while JDK installs and extracts.'''
         if download.is_alive():
@@ -290,3 +280,9 @@ class JdkDialog(ui_utils.CommonDialog):
         self._close()
 
         showinfo(self._DONE, self._MSG, parent=get_workbench())
+
+
+    def _close(self):
+        '''Fully shutdown the JdkDialog instance.'''
+        self.destroy()
+        self.main_frame = self.ok_button = self.cancel_button = None
