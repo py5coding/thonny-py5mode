@@ -63,7 +63,7 @@ def is_java_home_set() -> bool:
     return False # No JAVA_HOME pointing to a required JDK was found
 
 
-def get_thonny_jdk_install() -> Path | Literal['']:
+def get_thonny_jdk_install() -> PurePath | Literal['']:
     '''Check Thonny's user folder for a JDK installation subfolder
     and return its path. Otherwise, return an empty string.'''
     for subfolder in get_all_thonny_folders(): # Loop over each subfolder name
@@ -98,8 +98,8 @@ def is_valid_jdk_version(jdk_version: str) -> bool:
 
 def is_valid_jdk_path(jdk_path: PurePath | str) -> bool:
     '''Check if the given path points to a JDK install with a usable Java.'''
-    java_executable = jdk._IS_WINDOWS and 'java.exe' or 'java'
-    return Path(jdk_path, 'bin', java_executable).is_file()
+    java_compiler = jdk._IS_WINDOWS and 'javac.exe' or 'javac'
+    return Path(jdk_path, 'bin', java_compiler).is_file()
 
 
 def set_java_home(jdk_path: PurePath | str):
@@ -121,9 +121,9 @@ def create_java_home_entry_from_path(jdk_path: PurePath | str) -> str:
     return f'JAVA_HOME={adjust_jdk_path(jdk_path)}'
 
 
-def adjust_jdk_path(jdk_path: PurePath | str) -> Path:
+def adjust_jdk_path(jdk_path: PurePath | str) -> PurePath:
     '''Adjust JDK path for the specificity of current platform.'''
-    jdk_path = Path(jdk_path)
+    jdk_path = PurePath(jdk_path)
 
     # if MacOS, append "/Contents/Home/" to form the actual JDK path for it:
     if jdk.OS is jdk.OperatingSystem.MAC:
