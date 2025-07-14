@@ -88,12 +88,12 @@ def set_java_home(jdk_path: PurePath | str):
     jdk_path_entry = create_java_home_entry_from_path(jdk_path)
 
     workbench = get_workbench()
-    env_vars: list[str] = workbench.get_option('general.environment')
+    env_vars: set[str] = set(workbench.get_option('general.environment'))
 
     if jdk_path_entry not in env_vars:
-        env_vars = [*drop_all_java_home_entries(env_vars)]
-        env_vars.append(jdk_path_entry)
-        workbench.set_option('general.environment', env_vars)
+        entries = [*drop_all_java_home_entries(env_vars)]
+        entries.append(jdk_path_entry)
+        workbench.set_option('general.environment', entries)
         showinfo('JAVA_HOME', jdk_path, parent=workbench)
 
 
