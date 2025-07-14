@@ -80,6 +80,49 @@ def get_thonny_jdk_install() -> PurePath | Literal['']:
     return '' # No JDK with required version found in THONNY_USER_DIR
 
 
+def set_java_home(jdk_path: PurePath | str):
+    '''Add JDK path to config file (tools > options > general > env vars).'''
+    jdk_path = str(adjust_jdk_path(jdk_path))
+    env['JAVA_HOME'] = jdk_path # Python's process points to Thonny's JDK
+
+    jdk_path_entry = create_java_home_entry_from_path(jdk_path)
+
+    workbench = get_workbench()
+    env_vars: list[str] = workbench.get_option('general.environment')
+
+    if jdk_path_entry not in env_vars:
+        env_vars = [*drop_all_java_home_entries(env_vars)]
+        env_vars.append(jdk_path_entry)
+        workbench.set_option('general.environment', env_vars)
+        showinfo('JAVA_HOME', jdk_path, parent=workbench)
+
+
+def adjust_jdk_path(jdk_path: PurePath | str) -> PurePath:
+    '''Adjust JDK path for the specificity of current platform.'''
+    jdk_path = PurePath(jdk_path)
+
+    # if MacOS, append "/Contents/Home/" to form the actual JDK path for it:
+    if jdk.OS is jdk.OperatingSystem.MAC and jdk_path.parts[-1] != 'Home':
+        jdk_path = jdk_path / 'Contents' / 'Home'
+
+    return jdk_path
+
+
+def create_java_home_entry_from_path(jdk_path: PurePath | str) -> str:
+    '''Prefix JDK path with "JAVA_HOME=" to form a Thonny environment entry.'''
+    return f'JAVA_HOME={jdk_path}'
+
+
+def drop_all_java_home_entries(entries: Iterable[str]) -> Iterator[str]:
+    '''Filter out existing entries which start with "JAVA_HOME=".'''
+    return filter(_non_java_home_predicate, entries)
+
+
+def _non_java_home_predicate(entry: str) -> bool:
+    '''Check if the entry doesn't start with "JAVA_HOME=".'''
+    return not entry.startswith('JAVA_HOME=')
+
+
 def get_all_thonny_folders() -> list[str]:
     """Return reverse-sorted names of subfolders within Thonny's user folder."""
     with scandir(THONNY_USER_DIR) as entries:
@@ -100,46 +143,6 @@ def is_valid_jdk_path(jdk_path: PurePath | str) -> bool:
     '''Check if the given path points to a JDK install with a usable Java.'''
     java_compiler = jdk._IS_WINDOWS and 'javac.exe' or 'javac'
     return Path(jdk_path, 'bin', java_compiler).is_file()
-
-
-def set_java_home(jdk_path: PurePath | str):
-    '''Add JDK path to config file (tools > options > general > env vars).'''
-    jdk_path_entry = create_java_home_entry_from_path(jdk_path)
-    workbench = get_workbench()
-    env_vars: list[str] = workbench.get_option('general.environment')
-
-    if jdk_path_entry not in env_vars:
-        env_vars = [*drop_all_java_home_entries(env_vars)]
-        env_vars.append(jdk_path_entry)
-        workbench.set_option('general.environment', env_vars)
-        env['JAVA_HOME'] = str(jdk_path)
-        showinfo('JAVA_HOME', jdk_path_entry, parent=workbench)
-
-
-def create_java_home_entry_from_path(jdk_path: PurePath | str) -> str:
-    '''Adjust JDK path and prefix it with "JAVA_HOME=".'''
-    return f'JAVA_HOME={adjust_jdk_path(jdk_path)}'
-
-
-def adjust_jdk_path(jdk_path: PurePath | str) -> PurePath:
-    '''Adjust JDK path for the specificity of current platform.'''
-    jdk_path = PurePath(jdk_path)
-
-    # if MacOS, append "/Contents/Home/" to form the actual JDK path for it:
-    if jdk.OS is jdk.OperatingSystem.MAC:
-        jdk_path = jdk_path / 'Contents' / 'Home'
-
-    return jdk_path
-
-
-def drop_all_java_home_entries(entries: Iterable[str]) -> Iterator[str]:
-    '''Filter out existing entries which start with "JAVA_HOME=".'''
-    return filter(_non_java_home_predicate, entries)
-
-
-def _non_java_home_predicate(entry: str) -> bool:
-    '''Check if the entry doesn't start with "JAVA_HOME=".'''
-    return not entry.startswith('JAVA_HOME=')
 
 
 class DownloadJDK(Thread):
