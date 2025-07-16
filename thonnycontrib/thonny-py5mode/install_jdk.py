@@ -40,7 +40,7 @@ def install_jdk(): # Module's main entry-point function
     if is_java_home_set(): return # JAVA_HOME points to a required JDK version
 
     # Set a local JAVA_HOME to the detected JDK found in THONNY_USER_DIR:
-    if (path := get_thonny_jdk_install()): set_java_home(path)
+    if path := get_thonny_jdk_install(): set_java_home(path)
 
     else: # Otherwise, if Thonny doesn't have a proper JDK version:
         ui_utils.show_dialog(JdkDialog(get_workbench())) # ask to download it
@@ -48,13 +48,13 @@ def install_jdk(): # Module's main entry-point function
 
 def is_java_home_set() -> bool:
     '''Check system for existing JDK that meets the py5 version requirements.'''
-    if (java_home := env.get('JAVA_HOME')): # Check if JAVA_HOME is already set
+    if java_home := env.get('JAVA_HOME'): # Check if JAVA_HOME is already set
         system_jdk = 'TBD' # JDK version To-Be-Determined
 
         if islink(java_home):
             java_home = realpath(java_home) # If symlink, resolve actual path
 
-        if (match := _JDK_PATTERN.search(java_home)):
+        if match := _JDK_PATTERN.search(java_home):
             system_jdk = match.group(1) # Get JDK version from 1st match group
 
         if is_valid_jdk_version(system_jdk) and is_valid_jdk_path(java_home):
@@ -68,7 +68,7 @@ def get_thonny_jdk_install() -> PurePath | Literal['']:
     and return its path. Otherwise, return an empty string.'''
     for subfolder in get_all_thonny_folders(): # Loop over each subfolder name
         # Use regexp to check if subfolder contains a valid JDK name: 
-        if (match := _JDK_PATTERN.search(subfolder)):
+        if match := _JDK_PATTERN.search(subfolder):
             # Check JDK major version from 1st match group:
             if is_valid_jdk_version(match.group(1)):
                 # Create a full path by joining THONNY_USER_DIR + folder name:
