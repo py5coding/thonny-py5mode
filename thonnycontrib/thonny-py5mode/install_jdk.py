@@ -42,8 +42,8 @@ def install_jdk(): # Module's main entry-point function
     # Set a local JAVA_HOME to the detected JDK found in THONNY_USER_DIR:
     if path := get_thonny_jdk_install(): set_java_home(path)
 
-    else: # Otherwise, if Thonny doesn't have a proper JDK version:
-        ui_utils.show_dialog(JdkDialog(get_workbench())) # ask to download it
+    else: # Otherwise, if Thonny doesn't have a proper JDK version...
+        ui_utils.show_dialog(JdkDialog(get_workbench())) # ask to download it.
 
 
 def is_java_home_set() -> bool:
@@ -156,21 +156,17 @@ class DownloadJDK(Thread):
     def run(self):
         '''Download and setup JDK (installs to Thonny's config directory)'''
         for path in get_all_thonny_folder_paths():
-            # Delete existing thonny-py5mode JDK (if one exists):
-            if path.name.startswith(_JDK_DIR):
-                shutil.rmtree(path)
-                break
+            # Delete existing Thonny's JDK subfolders matching jdk-<version##>:
+            if path.name.startswith(_JDK_DIR): shutil.rmtree(path)
 
-        # Download and extract JDK:
+        # Download and extract JDK subfolder into Thonny's user folder:
         jdk.install(_VERSION_JDK, path=THONNY_USER_DIR)
 
         for path in get_all_thonny_folder_paths():
-            # Rename extracted JDK directory to jdk-<version##>:
-            if path.name.startswith(_JDK_DIR):
-                rename(path, _JDK_PATH)
-                break
+            # Rename extracted Thonny's JDK subfolder to jdk-<version##>:
+            if path.name.startswith(_JDK_DIR): rename(path, _JDK_PATH); break
 
-        set_java_home(_JDK_HOME)
+        set_java_home(_JDK_HOME) # Add a Thonny's JAVA_HOME entry for it
 
 
 class JdkDialog(ui_utils.CommonDialog):
