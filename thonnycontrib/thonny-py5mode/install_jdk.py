@@ -28,12 +28,14 @@ _JDK_PATTERN = re.compile(r"""
     (\d+)           # Capture JDK major version number as group(1)
 """, re.IGNORECASE | re.VERBOSE)
 
-_REQUIRE_JDK, _VERSION_JDK = 17, '17'
-_JDK_DIR = 'jdk-' + _VERSION_JDK
+_REQUIRE_JDK, _VERSION_JDK = 17, '17' # Minimum required version
+_JDK_DIR = 'jdk-' + _VERSION_JDK # JDK subfolder name
 
-_THONNY_USER_PATH = Path(THONNY_USER_DIR)
-_JDK_PATH = _THONNY_USER_PATH / _JDK_DIR
-_JDK_HOME = str(_JDK_PATH)
+_THONNY_USER_PATH = Path(THONNY_USER_DIR) # Thonny folder's full path string
+_JDK_PATH = _THONNY_USER_PATH / _JDK_DIR # Path for JDK subfolder
+_JDK_HOME = str(_JDK_PATH) # JDK subfolder's full path string
+
+workbench = get_workbench() # Workbench singleton instance
 
 def install_jdk(): # Module's main entry-point function
     '''Call this function from where this module is imported.'''
@@ -42,8 +44,8 @@ def install_jdk(): # Module's main entry-point function
     # Set a local JAVA_HOME to the detected JDK found in THONNY_USER_DIR:
     if path := get_thonny_jdk_install(): set_java_home(path)
 
-    else: # Otherwise, if Thonny doesn't have a proper JDK version...
-        ui_utils.show_dialog(JdkDialog(get_workbench())) # ask to download it.
+    # Otherwise, if Thonny doesn't have a proper JDK version...
+    else: ui_utils.show_dialog(JdkDialog()) # ... ask permission to download it.
 
 
 def is_java_home_set() -> bool:
@@ -86,8 +88,6 @@ def set_java_home(jdk_path: PurePath | str):
     env['JAVA_HOME'] = jdk_path # Python's process points to Thonny's JDK
 
     jdk_path_entry = create_java_home_entry_from_path(jdk_path)
-
-    workbench = get_workbench()
     env_vars: set[str] = set(workbench.get_option('general.environment'))
 
     if jdk_path_entry not in env_vars:
@@ -193,7 +193,7 @@ class JdkDialog(ui_utils.CommonDialog):
 
     _PAD = 0, 15
 
-    def __init__(self, master=None, skip_diag_attribs=False, **kw):
+    def __init__(self, master=workbench, skip_diag_attribs=False, **kw):
         super().__init__(master, skip_diag_attribs, **kw)
 
         # Window/Frame:
@@ -278,7 +278,7 @@ class JdkDialog(ui_utils.CommonDialog):
         progress.stop()
         self._close()
 
-        showinfo(self._DONE, self._MSG, parent=get_workbench())
+        showinfo(self._DONE, self._MSG, parent=workbench)
 
 
     def _close(self):
