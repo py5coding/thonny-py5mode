@@ -9,10 +9,10 @@ import jdk
 from pathlib import Path, PurePath
 from threading import Thread
 
-from os import environ as env, scandir, rename
+from os import environ as env, scandir, rename, PathLike
 from os.path import islink, realpath
 
-from typing import Literal
+from typing import Callable, Literal, TypeAlias
 from collections.abc import Iterable, Iterator
 
 import tkinter as tk
@@ -21,6 +21,12 @@ from tkinter.messagebox import showinfo
 
 from thonny import get_workbench, ui_utils, THONNY_USER_DIR
 from thonny.languages import tr
+
+StrPath: TypeAlias = str | PathLike[str]
+'''A type representing string-based filesystem paths.'''
+
+PathAction: TypeAlias = Callable[[StrPath], None]
+'''Represents an action applied to a single path-like object.'''
 
 _JDK_PATTERN = re.compile(r"""
     (?:java|jdk)    # Match 'java' or 'jdk' (non-capturing group)
@@ -82,7 +88,7 @@ def get_thonny_jdk_install() -> PurePath | Literal['']:
     return '' # No JDK with required version found in THONNY_USER_DIR
 
 
-def set_java_home(jdk_path: PurePath | str):
+def set_java_home(jdk_path: StrPath):
     '''Add JDK path to config file (tools > options > general > env vars).'''
     jdk_path = str(adjust_jdk_path(jdk_path))
     env['JAVA_HOME'] = jdk_path # Python's process points to Thonny's JDK
@@ -97,7 +103,7 @@ def set_java_home(jdk_path: PurePath | str):
         showinfo('JAVA_HOME', jdk_path, parent=workbench)
 
 
-def adjust_jdk_path(jdk_path: PurePath | str) -> PurePath:
+def adjust_jdk_path(jdk_path: StrPath) -> PurePath:
     '''Adjust JDK path for the specificity of current platform.'''
     jdk_path = PurePath(jdk_path)
 
@@ -108,7 +114,7 @@ def adjust_jdk_path(jdk_path: PurePath | str) -> PurePath:
     return jdk_path
 
 
-def create_java_home_entry_from_path(jdk_path: PurePath | str) -> str:
+def create_java_home_entry_from_path(jdk_path: StrPath) -> str:
     '''Prefix JDK path with "JAVA_HOME=" to form a Thonny environment entry.'''
     return f'JAVA_HOME={jdk_path}'
 
@@ -123,26 +129,21 @@ def _non_java_home_predicate(entry: str) -> bool:
     return not entry.startswith('JAVA_HOME=')
 
 
-def get_all_thonny_folders() -> list[str]:
-    """Return reverse-sorted names of subfolders within Thonny's user folder."""
-    with scandir(THONNY_USER_DIR) as entries:
-        return sorted((e.name for e in entries if e.is_dir()), reverse=True)
-
-
-def get_all_thonny_folder_paths() -> Iterator[Path]:
-    '''Find all subfolder paths within Thonny's user folder'''
-    return filter(Path.is_dir, _THONNY_USER_PATH.iterdir())
-
-
 def is_valid_jdk_version(jdk_version: str) -> bool:
     '''Check if JDK version meets minimum version requirement.'''
     return jdk_version.isdigit() and int(jdk_version) >= _REQUIRE_JDK
 
 
-def is_valid_jdk_path(jdk_path: PurePath | str) -> bool:
+def is_valid_jdk_path(jdk_path: StrPath) -> bool:
     '''Check if the given path points to a JDK install with a usable Java.'''
     java_compiler = jdk._IS_WINDOWS and 'javac.exe' or 'javac'
     return Path(jdk_path, 'bin', java_compiler).is_file()
+
+
+def get_all_thonny_folders() -> list[str]:
+    """Return reverse-sorted names of subfolders within Thonny's user folder."""
+    with scandir(THONNY_USER_DIR) as entries:
+        return sorted((e.name for e in entries if e.is_dir()), reverse=True)
 
 
 class DownloadJDK(Thread):
@@ -155,18 +156,38 @@ class DownloadJDK(Thread):
     '''
     def run(self):
         '''Download and setup JDK (installs to Thonny's config directory)'''
-        for path in get_all_thonny_folder_paths():
-            # Delete existing Thonny's JDK subfolders matching jdk-<version##>:
-            if path.name.startswith(_JDK_DIR): shutil.rmtree(path)
+        # Delete existing Thonny's JDK subfolders matching jdk-<version##>:
+        self.process_match_jdk_dirs(shutil.rmtree)
 
         # Download and extract JDK subfolder into Thonny's user folder:
         jdk.install(_VERSION_JDK, path=THONNY_USER_DIR)
 
-        for path in get_all_thonny_folder_paths():
-            # Rename extracted Thonny's JDK subfolder to jdk-<version##>:
-            if path.name.startswith(_JDK_DIR): rename(path, _JDK_PATH); break
+        # Rename extracted Thonny's JDK subfolder to jdk-<version##>:
+        self.process_match_jdk_dirs(self.rename_folder, True)
 
         set_java_home(_JDK_HOME) # Add a Thonny's JAVA_HOME entry for it
+
+
+    @staticmethod
+    def process_match_jdk_dirs(action: PathAction, only_1st=False):
+        '''Apply an action to JDK-matching subfolders in Thonny's folder.'''
+        for path in DownloadJDK.get_all_thonny_folder_paths():
+            if path.name.startswith(_JDK_DIR): # Folder name matches <jdk-##> 
+                action(path) # Callback to run on each matching folder path
+                if only_1st: break # Stop at 1st match occurrence
+
+
+    @staticmethod
+    def get_all_thonny_folder_paths() -> Iterator[Path]:
+        '''Find all subfolder paths within Thonny's user folder'''
+        return filter(Path.is_dir, _THONNY_USER_PATH.iterdir())
+
+
+    @staticmethod
+    def rename_folder(path: StrPath):
+        '''Rename a JDK subfolder to the expected jdk-<version##> format.'''
+        rename(path, _JDK_PATH)
+
 
 
 class JdkDialog(ui_utils.CommonDialog):
