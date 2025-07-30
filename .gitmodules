@@ -1,3 +1,0 @@
-[submodule "thonnycontrib/thonny-py5mode/py5colorpicker"]
-	path = thonnycontrib/thonny-py5mode/py5colorpicker
-	url = https://github.com/tabreturn/thonny-py5mode-tkcolorpicker
