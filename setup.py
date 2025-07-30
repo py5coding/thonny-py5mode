@@ -16,7 +16,7 @@ setup(
   url='https://github.com/tabreturn/thonny-py5mode',
   author='tabreturn',
   author_email='thonny-py5mode@tabreturn.com',
-  license='WTFPL',
+  license='MIT',
   classifiers=[
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     'Environment :: Plugins',
