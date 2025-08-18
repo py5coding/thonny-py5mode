@@ -14,16 +14,18 @@ import sys
 import tkinter as tk
 import types
 import webbrowser
-from .about_plugin import add_about_py5mode_command, open_about_plugin
-from .install_jdk import install_jdk
 from distutils.sysconfig import get_python_lib
 from importlib import machinery, util
-from thonny import editors, get_workbench, get_runner, running, token_utils
+from tkinter.messagebox import showerror, showinfo
+
+from thonny import editors, get_runner, get_workbench, running, token_utils
 from thonny.common import BackendEvent
 from thonny.languages import tr
 from thonny.running import Runner
 from thonny.shell import BaseShellText
-from tkinter.messagebox import showerror, showinfo
+
+from .about_plugin import add_about_py5mode_command, open_about_plugin
+from .install_jdk import install_jdk
 
 try:  # thonny 4 package layout
     from thonny import get_sys_path_directory_containg_plugins
@@ -32,7 +34,6 @@ except ImportError:  # thonny 3 package layout
 # modified tkcolorpicker (by j4321) to work with thonny for macos
 # https://github.com/py5coding/thonny-py5mode-tkcolorpicker
 from .py5colorpicker.tkcolorpicker import modeless_colorpicker
-
 
 _PY5_IMPORTED_MODE = "run.py5_imported_mode"
 color_selector_open = False
@@ -79,13 +80,13 @@ def execute_imported_mode() -> None:
                 run_sketch = location
                 break
 
-        # if display window location unspecified, set it to (50, 50)
-        if get_workbench().get_option("run.py5_location") is None:
-            get_workbench().set_option("run.py5_location", "50,50")
+        # set switch so Sketch will report window location
+        py5_switches = "--py5_options external"
         # retrieve last display window location
         py5_loc = get_workbench().get_option("run.py5_location")
-        py5_loc = ",".join(map(str, py5_loc))
-        py5_switches = "--py5_options external location=" + py5_loc
+        if py5_loc:
+            # add location switch to command line
+            py5_switches += " location=" + ",".join(map(str, py5_loc))
 
         # run command to execute sketch
         working_directory = os.path.dirname(current_file)
