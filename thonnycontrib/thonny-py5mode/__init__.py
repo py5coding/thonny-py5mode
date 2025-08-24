@@ -32,7 +32,7 @@ try:  # thonny 4 package layout
 except ImportError:  # thonny 3 package layout
     pass
 # modified tkcolorpicker (by j4321) to work with thonny for macos
-# https://github.com/py5coding/thonny-py5mode-tkcolorpicker
+# now vendored on this same repo
 from .py5colorpicker.tkcolorpicker import modeless_colorpicker
 
 _PY5_IMPORTED_MODE = "run.py5_imported_mode"
