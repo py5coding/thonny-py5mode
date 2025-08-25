@@ -32,7 +32,7 @@ try:  # thonny 4 package layout
 except ImportError:  # thonny 3 package layout
     pass
 # modified tkcolorpicker (by j4321) to work with thonny for macos
-# https://github.com/py5coding/thonny-py5mode-tkcolorpicker
+# now vendored on this same repo
 from .py5colorpicker.tkcolorpicker import modeless_colorpicker
 
 _PY5_IMPORTED_MODE = "run.py5_imported_mode"
@@ -252,13 +252,13 @@ def load_plugin() -> None:
         lambda: webbrowser.open("https://py5coding.org/reference/"),
         group=30,
     )
-    git_raw_user = "https://raw.githubusercontent.com/py5coding/"
-    git_asset_path = "processing.py-cheat-sheet/master/py5/py5_cc.pdf"
+    git_raw_url = "https://raw.githubusercontent.com/"
+    quick_reference_pdf = "py5coding/thonny-py5mode/main/assets/py5_quick_reference.pdf"
     get_workbench().add_command(
-        "py5_cheatsheet",
+        "py5_quickreference",
         "py5",
-        tr("py5 cheatsheet"),
-        lambda: webbrowser.open(git_raw_user + git_asset_path),
+        tr("py5 quick reference"),
+        lambda: webbrowser.open(git_raw_url + quick_reference_pdf),
         group=30,
     )
     get_workbench().add_command(
