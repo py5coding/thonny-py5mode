@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "install-jdk==1.1.0",
-    "py5",
+    "py5>=0.10.7a0",
     "pyperclip==1.9.0",
 ]
 
