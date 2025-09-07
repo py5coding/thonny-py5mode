@@ -25,6 +25,9 @@ dependencies = [
     "pyperclip==1.9.0",
 ]
 
+[project.optional-dependencies]
+extras = ["py5[extras]>=0.10.7a0"]
+
 [project.urls]
 Homepage = "https://github.com/py5coding/thonny-py5mode"
 
