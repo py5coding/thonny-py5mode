@@ -19,11 +19,10 @@ classifiers = [
     "Topic :: Multimedia :: Graphics",
     "Topic :: Text Editors :: Integrated Development Environments (IDE)",
 ]
-dependencies = [
-    "install-jdk==1.1.0",
-    "py5>=0.10.7a0",
-    "pyperclip==1.9.0",
-]
+dependencies = ["install-jdk==1.1.0", "py5>=0.10.7a0", "pyperclip==1.9.0"]
+
+[project.optional-dependencies]
+extras = ["py5[extras]>=0.10.7a0"]
 
 [project.urls]
 Homepage = "https://github.com/py5coding/thonny-py5mode"
@@ -35,6 +34,4 @@ path = "thonnycontrib/thonny-py5mode/_version.py"
 packages = ["/thonnycontrib"]
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "/thonnycontrib",
-]
+include = ["/thonnycontrib"]
