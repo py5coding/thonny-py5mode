@@ -77,7 +77,7 @@ def is_java_home_set() -> bool:
         if match := JDK_PATTERN.search(java_home):
             system_jdk = match.group(1) # Get JDK version from 1st match group
 
-        if is_valid_jdk_version(system_jdk) and is_validjdk_path(java_home):
+        if is_valid_jdk_version(system_jdk) and is_valid_jdk_path(java_home):
             return True # Version is numeric and meets the minimum requirement
 
     return False # No JAVA_HOME pointing to a required JDK was found
@@ -93,10 +93,10 @@ def get_thonny_jdk_install() -> PurePath | Literal['']:
             # Check JDK major version from 1st match group:
             if is_valid_jdk_version(match.group(1)):
                 # Create a full path by joining THONNY_USER_DIR + folder name:
-                jdk_path = adjustjdk_path(THONNY_USER_PATH / subfolder)
+                jdk_path = adjust_jdk_path(THONNY_USER_PATH / subfolder)
 
                 # Check and return a valid JDK subfolder in THONNY_USER_DIR:
-                if is_validjdk_path(jdk_path): return jdk_path
+                if is_valid_jdk_path(jdk_path): return jdk_path
 
     return '' # No JDK with required version found in THONNY_USER_DIR
 
@@ -104,7 +104,7 @@ def get_thonny_jdk_install() -> PurePath | Literal['']:
 def set_java_home(jdk_path: StrPath) -> None:
     '''Add JDK path to config file (tools > options > general > env vars).'''
 
-    jdk_path = str(adjustjdk_path(jdk_path)) # Platform-adjusted path
+    jdk_path = str(adjust_jdk_path(jdk_path)) # Platform-adjusted path
     env['JAVA_HOME'] = jdk_path # Python's process points to Thonny's JDK too
 
     jdk_path_entry = create_java_home_entry_from_path(jdk_path)
@@ -117,7 +117,7 @@ def set_java_home(jdk_path: StrPath) -> None:
         showinfo('JAVA_HOME', jdk_path, parent=WORKBENCH)
 
 
-def adjustjdk_path(jdk_path: StrPath) -> PurePath:
+def adjust_jdk_path(jdk_path: StrPath) -> PurePath:
     '''Adjust JDK path for the specificity of current platform.'''
 
     jdk_path = PurePath(jdk_path)
@@ -149,7 +149,7 @@ def is_valid_jdk_version(jdk_version: str) -> bool:
     return jdk_version.isdigit() and int(jdk_version) >= REQUIRE_JDK
 
 
-def is_validjdk_path(jdk_path: StrPath) -> bool:
+def is_valid_jdk_path(jdk_path: StrPath) -> bool:
     '''Check if the given path points to a JDK install with a usable Java.'''
     java_compiler = jdk._IS_WINDOWS and 'javac.exe' or 'javac'
     return Path(jdk_path, 'bin', java_compiler).is_file()
@@ -281,19 +281,19 @@ class DownloadJDK(Thread):
         '''Download and setup JDK (installs to Thonny's user directory)'''
 
         # Delete existing Thonny's JDK subfolders matching jdk-<version##>:
-        self.process_matchjdk_dirs(shutil.rmtree)
+        self.process_match_jdk_dirs(shutil.rmtree)
 
         # Download and extract JDK subfolder into Thonny's user folder:
         jdk.install(DOWNLOAD_JDK, path=THONNY_USER_DIR)
 
         # Rename extracted Thonny's JDK subfolder to jdk-<version##>:
-        self.process_matchjdk_dirs(self.rename_folder, True)
+        self.process_match_jdk_dirs(self.rename_folder, True)
 
         set_java_home(JDK_HOME) # Add a Thonny's JAVA_HOME entry for it
 
 
     @staticmethod
-    def process_matchjdk_dirs(action: PathAction, only_1st=False) -> None:
+    def process_match_jdk_dirs(action: PathAction, only_1st=False) -> None:
         '''Apply an action to JDK-matching subfolders in Thonny's folder.'''
 
         for path in DownloadJDK.get_all_thonny_folder_paths():
