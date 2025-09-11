@@ -107,12 +107,11 @@ def set_java_home(jdk_path: StrPath) -> None:
     jdk_path = str(adjust_jdk_path(jdk_path)) # Platform-adjusted path
     env['JAVA_HOME'] = jdk_path # Python's process points to Thonny's JDK too
 
-    jdk_path_entry = create_java_home_entry_from_path(jdk_path)
+    java_home_entry = create_java_home_entry_from_path(jdk_path)
     env_vars: set[str] = set(WORKBENCH.get_option('general.environment'))
 
-    if jdk_path_entry not in env_vars:
-        entries = [*drop_all_java_home_entries(env_vars)]
-        entries.append(jdk_path_entry)
+    if java_home_entry not in env_vars:
+        entries = [ *drop_all_java_home_entries(env_vars), java_home_entry ]
         WORKBENCH.set_option('general.environment', entries)
         showinfo('JAVA_HOME', jdk_path, parent=WORKBENCH)
 
