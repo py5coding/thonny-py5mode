@@ -91,7 +91,7 @@ def get_thonny_jdk_install() -> PurePath | Literal['']:
         # Use regexp to check if subfolder contains a valid JDK name: 
         if match := JDK_PATTERN.search(subfolder):
             # Check JDK major version from 1st match group:
-            if is_valid_jdk_version(match.group(1)):
+            if is_valid_jdk_version( match.group(1) ):
                 # Create a full path by joining THONNY_USER_DIR + folder name:
                 jdk_path = adjust_jdk_path(THONNY_USER_PATH / subfolder)
 
