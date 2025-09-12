@@ -95,7 +95,7 @@ def get_thonny_jdk_install() -> PurePath | Literal['']:
                 # Create a full path by joining THONNY_USER_DIR + folder name:
                 jdk_path = adjust_jdk_path(THONNY_USER_PATH / subfolder)
 
-                # Check and return a valid JDK subfolder in THONNY_USER_DIR:
+                # Check and return a valid JDK subfolder from THONNY_USER_DIR:
                 if is_valid_jdk_path(jdk_path): return jdk_path
 
     return '' # No JDK with required version found in THONNY_USER_DIR
