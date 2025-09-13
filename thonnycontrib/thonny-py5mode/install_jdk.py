@@ -47,9 +47,6 @@ THONNY_USER_PATH = Path(THONNY_USER_DIR)
 JDK_PATH = THONNY_USER_PATH / JDK_DIR
 '''Path for JDK installation subfolder.'''
 
-JDK_HOME = str(JDK_PATH)
-'''JDK install subfolder's full path string.'''
-
 WORKBENCH = get_workbench()
 '''Thonny's workbench singleton instance.'''
 
@@ -288,7 +285,7 @@ class DownloadJDK(Thread):
         # Rename extracted Thonny's JDK subfolder to jdk-<version##>:
         self.process_match_jdk_dirs(self.rename_folder, True)
 
-        set_java_home(JDK_HOME) # Add a Thonny's JAVA_HOME entry for it
+        set_java_home(JDK_PATH) # Add a Thonny's JAVA_HOME entry for it
 
 
     @staticmethod
