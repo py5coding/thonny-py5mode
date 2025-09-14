@@ -47,9 +47,6 @@ THONNY_USER_PATH = Path(THONNY_USER_DIR)
 JDK_PATH = THONNY_USER_PATH / JDK_DIR
 '''Path for JDK installation subfolder.'''
 
-JDK_HOME = str(JDK_PATH)
-'''JDK install subfolder's full path string.'''
-
 WORKBENCH = get_workbench()
 '''Thonny's workbench singleton instance.'''
 
@@ -88,14 +85,14 @@ def get_thonny_jdk_install() -> PurePath | Literal['']:
     and return its path. Otherwise, return an empty string.'''
 
     for subfolder in get_all_thonny_folders(): # Loop over each subfolder name
-        # Use regexp to check if subfolder contains a valid JDK name:
+        # Use regexp to check if subfolder contains a valid JDK name: 
         if match := JDK_PATTERN.search(subfolder):
             # Check JDK major version from 1st match group:
-            if is_valid_jdk_version(match.group(1)):
+            if is_valid_jdk_version( match.group(1) ):
                 # Create a full path by joining THONNY_USER_DIR + folder name:
                 jdk_path = adjust_jdk_path(THONNY_USER_PATH / subfolder)
 
-                # Check and return a valid JDK subfolder in THONNY_USER_DIR:
+                # Check and return a valid JDK subfolder from THONNY_USER_DIR:
                 if is_valid_jdk_path(jdk_path): return jdk_path
 
     return '' # No JDK with required version found in THONNY_USER_DIR
@@ -108,7 +105,7 @@ def set_java_home(jdk_path: StrPath) -> None:
     env['JAVA_HOME'] = jdk_path # Python's process points to Thonny's JDK too
 
     java_home_entry = create_java_home_entry_from_path(jdk_path)
-    env_vars: set[str] = set(WORKBENCH.get_option('general.environment'))
+    env_vars = dict.fromkeys(WORKBENCH.get_option('general.environment'))
 
     if java_home_entry not in env_vars:
         entries = [ *drop_all_java_home_entries(env_vars), java_home_entry ]
@@ -288,7 +285,7 @@ class DownloadJDK(Thread):
         # Rename extracted Thonny's JDK subfolder to jdk-<version##>:
         self.process_match_jdk_dirs(self.rename_folder, True)
 
-        set_java_home(JDK_HOME) # Add a Thonny's JAVA_HOME entry for it
+        set_java_home(JDK_PATH) # Add a Thonny's JAVA_HOME entry for it
 
 
     @staticmethod
@@ -296,7 +293,7 @@ class DownloadJDK(Thread):
         '''Apply an action to JDK-matching subfolders in Thonny's folder.'''
 
         for path in DownloadJDK.get_all_thonny_folder_paths():
-            if path.name.startswith(JDK_DIR): # Folder name matches <jdk-##>
+            if path.name.startswith(JDK_DIR): # Folder name matches <jdk-##> 
                 action(path) # Callback to run on each matching folder path
                 if only_1st: break # Stop at 1st match occurrence
 
