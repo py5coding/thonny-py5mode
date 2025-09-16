@@ -27,17 +27,18 @@ def patched_editor_autocomplete(self: MainCPythonBackend, cmd) -> AutoComplete:
         cmd.row,
         cmd.column,
         cmd.filename,
-        sys_path=[get_sys_path_directory_containg_plugins()])
+        sys_path=[ get_sys_path_directory_containg_plugins() ])
 
     cmd.row -= 1
     cmd.source = cmd.source[len(prefix):]
 
-    return dict(
-        source=cmd.source,
-        row=cmd.row,
-        column=cmd.column,
-        filename=cmd.filename,
-        completions=completions)
+
+    return {
+        'source': cmd.source,
+        'row': cmd.row,
+        'column': cmd.column,
+        'filename': cmd.filename,
+        'completions': completions }
 
 
 def load_plugin() -> None:
@@ -47,6 +48,7 @@ def load_plugin() -> None:
     # Note that _cmd_editor_autocomplete() is not a public API
     # May need to treat different Thonny versions differently:
     # https://groups.Google.com/g/thonny/c/wWCeXWpKy8c
+
     c_e_a = MainCPythonBackend._cmd_editor_autocomplete
     setattr(MainCPythonBackend, '_original_editor_autocomplete', c_e_a)
     MainCPythonBackend._cmd_editor_autocomplete = patched_editor_autocomplete
