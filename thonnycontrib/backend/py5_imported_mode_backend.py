@@ -32,7 +32,6 @@ def patched_editor_autocomplete(self: MainCPythonBackend, cmd) -> AutoComplete:
     cmd.row -= 1
     cmd.source = cmd.source[len(prefix):]
 
-
     return {
         'source': cmd.source,
         'row': cmd.row,
