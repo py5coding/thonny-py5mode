@@ -27,17 +27,15 @@ from thonny.shell import BaseShellText
 from .about_plugin import add_about_py5mode_command, open_about_plugin
 from .install_jdk import install_jdk
 
-try:  # thonny 4 package layout
-    from thonny import get_sys_path_directory_containg_plugins
-except ImportError:  # thonny 3 package layout
-    pass
+from thonny import get_sys_path_directory_containg_plugins
+
 # modified tkcolorpicker (by j4321) to work with thonny for macos
 # now vendored on this same repo
 from .py5colorpicker.tkcolorpicker import modeless_colorpicker
-
-_PY5_IMPORTED_MODE = "run.py5_imported_mode"
 color_selector_open = False
 
+_PY5_IMPORTED_MODE = "run.py5_imported_mode"
+_PY5_LIVE_CODING = "run.py5_live_coding"
 
 def apply_recommended_py5_config() -> None:
     """apply some recommended settings for thonny py5 work"""
@@ -97,9 +95,55 @@ def execute_imported_mode() -> None:
         running.get_shell().submit_magic_command(cd_cmd_line + exe_cmd_line)
 
 
-def patched_execute_current(self: Runner, command_name: str) -> None:
+def patched_execute_imported_mode(self: Runner, command_name: str) -> None:
     """override run button behavior for py5 imported mode"""
     execute_imported_mode()
+
+
+def patched_execute_live_coding(self: Runner, command_name: str) -> None:
+    """override run button behavior for py5 live coding mode"""
+    execute_live_coding()
+
+
+def update_run_patching() -> None:
+    """
+    Apply the correct Run-button patch based on current imported/live coding
+    settings. Imported mode and live coding are mutually exclusive by
+    convention (the toggle functions enforce this). If neither is active,
+    the original Runner.execute_current is restored.
+    """
+    imported_mode = get_workbench().get_option(_PY5_IMPORTED_MODE)
+    live_coding = get_workbench().get_option(_PY5_LIVE_CODING)
+
+    if get_workbench().in_simple_mode():
+        os.environ["PY5_IMPORTED_MODE"] = "auto"
+        return
+    else:
+        os.environ["PY5_IMPORTED_MODE"] = str(imported_mode)
+
+    if imported_mode:
+        if not hasattr(Runner, "_original_execute_current"):
+            Runner._original_execute_current = Runner.execute_current
+        Runner.execute_current = patched_execute_imported_mode
+        try:
+            get_runner().restart_backend(False)
+        except AttributeError:
+            pass
+    elif live_coding:
+        if not hasattr(Runner, "_original_execute_current"):
+            Runner._original_execute_current = Runner.execute_current
+        Runner.execute_current = patched_execute_live_coding
+        try:
+            get_runner().restart_backend(False)
+        except AttributeError:
+            pass
+    else:
+        if hasattr(Runner, "_original_execute_current"):
+            Runner.execute_current = Runner._original_execute_current
+            try:
+                get_runner().restart_backend(False)
+            except AttributeError:
+                pass
 
 
 def patch_token_coloring() -> None:
@@ -117,39 +161,23 @@ def patch_token_coloring() -> None:
     token_utils.BUILTIN = patched_BUILTIN
 
 
-def set_py5_imported_mode() -> None:
-    """set imported mode variable in thonny configuration.ini file"""
-    if get_workbench().in_simple_mode():
-        os.environ["PY5_IMPORTED_MODE"] = "auto"
-    else:
-        p_i_m = str(get_workbench().get_option(_PY5_IMPORTED_MODE))
-        os.environ["PY5_IMPORTED_MODE"] = p_i_m
-
-        # switch on/off py5 run button behavior
-        if get_workbench().get_option(_PY5_IMPORTED_MODE):
-            Runner._original_execute_current = Runner.execute_current
-            Runner.execute_current = patched_execute_current
-            # must restart backend for py5 autocompletion upon installing jdk
-            try:
-                get_runner().restart_backend(False)
-            except AttributeError:
-                pass
-        else:
-            # patched method non-existant when imported mode active at launch
-            try:
-                Runner.execute_current = Runner._original_execute_current
-                # this line disable py5 autocompletion in this instance
-                get_runner().restart_backend(False)
-            except AttributeError:
-                pass
-
-
 def toggle_py5_imported_mode() -> None:
     """toggle py5 imported mode settings"""
     var = get_workbench().get_variable(_PY5_IMPORTED_MODE)
     var.set(not var.get())
+    if var.get():
+        get_workbench().get_variable(_PY5_LIVE_CODING).set(False)
     install_jdk()
-    set_py5_imported_mode()
+    update_run_patching()
+
+
+def toggle_py5_live_coding() -> None:
+    """toggle py5 live coding mode settings"""
+    var = get_workbench().get_variable(_PY5_LIVE_CODING)
+    var.set(not var.get())
+    if var.get():
+        get_workbench().get_variable(_PY5_IMPORTED_MODE).set(False)
+    update_run_patching()
 
 
 def color_selector() -> None:
@@ -220,6 +248,39 @@ def show_sketch_folder() -> None:
         subprocess.Popen(["explorer", path])
 
 
+def execute_live_coding() -> None:
+    """run py5 live-coding tool with the current file via the shell"""
+    current_editor = get_workbench().get_editor_notebook().get_current_editor()
+    current_file = current_editor.get_filename()
+
+    if current_file is None:
+        editors.Editor.save_file(current_editor)
+        current_file = current_editor.get_filename()
+
+    if current_file and current_file.split(".")[-1] in ("py", "py5", "pyde"):
+        current_editor.save_file()
+        user_packages = str(site.getusersitepackages())
+        site_packages = str(site.getsitepackages()[0])
+        plug_packages = util.find_spec("py5_tools").submodule_search_locations
+        live_coding_locations = [
+            pathlib.Path(user_packages + "/py5_tools/tools/live_coding.py"),
+            pathlib.Path(site_packages + "/py5_tools/tools/live_coding.py"),
+            pathlib.Path(plug_packages[0] + "/tools/live_coding.py"),
+            pathlib.Path(get_python_lib() + "/py5_tools/tools/live_coding.py"),
+        ]
+
+        for location in live_coding_locations:
+            if location.is_file():
+                live_coding = location
+                break
+
+        working_directory = os.path.dirname(current_file)
+        cd_cmd_line = running.construct_cd_command(working_directory) + "\n"
+        cmd_parts = ["%Run", str(live_coding), current_file]
+        exe_cmd_line = running.construct_cmd_line(cmd_parts) + "\n"
+        running.get_shell().submit_magic_command(cd_cmd_line + exe_cmd_line)
+
+
 def load_plugin() -> None:
     get_workbench().set_default(_PY5_IMPORTED_MODE, False)
     get_workbench().add_command(
@@ -252,6 +313,7 @@ def load_plugin() -> None:
         lambda: webbrowser.open("https://py5coding.org/reference/"),
         group=30,
     )
+
     git_raw_url = "https://raw.githubusercontent.com/"
     quick_reference_pdf = "py5coding/thonny-py5mode/main/assets/py5_quick_reference.pdf"
     get_workbench().add_command(
@@ -264,12 +326,23 @@ def load_plugin() -> None:
     get_workbench().add_command(
         "open_folder", "py5", tr("Show sketch folder"), show_sketch_folder, group=40
     )
+    get_workbench().set_default(_PY5_LIVE_CODING, False)
+    get_workbench().add_command(
+        "toggle_py5_live_coding",
+        "py5",
+        tr("Live Coding (py5 module mode only)"),
+        toggle_py5_live_coding,
+        flag_name=_PY5_LIVE_CODING,
+        group=10,
+    )
+
     add_about_py5mode_command(50)
     patch_token_coloring()
-    set_py5_imported_mode()
+    update_run_patching()
 
     # note that _handle_program_output is not a public api
     # may need to treat different thonny versions differently
     h_p_o = BaseShellText._handle_program_output
     BaseShellText._original_handle_program_output = h_p_o
     BaseShellText._handle_program_output = patched_handle_program_output
+
