@@ -19,6 +19,7 @@ from importlib import machinery, util
 from tkinter.messagebox import showerror, showinfo
 
 from thonny import editors, get_runner, get_workbench, running, token_utils
+from thonny import is_portable
 from thonny.common import BackendEvent
 from thonny.languages import tr
 from thonny.running import Runner
@@ -339,6 +340,10 @@ def load_plugin() -> None:
     add_about_py5mode_command(50)
     patch_token_coloring()
     update_run_patching()
+    
+    if is_portable():  # if this plug-in is running Thonny portable
+        # it should update the JDK path on every run, in case the Thonny folder is moved. 
+        install_jdk()
 
     # note that _handle_program_output is not a public api
     # may need to treat different thonny versions differently
