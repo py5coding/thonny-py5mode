@@ -1,42 +1,44 @@
-"""thonny-py5mode frontend
+"""
+thonny-py5mode frontend
 interacts with py5mode backend (backend > py5_imported_mode_backend.py)
 """
 
-import builtins
-import keyword
 import os
 import pathlib
-import platform
-import shutil
 import site
 import subprocess
 import sys
-import tkinter as tk
 import types
 import webbrowser
 from distutils.sysconfig import get_python_lib
 from importlib import machinery, util
 from tkinter.messagebox import showerror, showinfo
 
-from thonny import editors, get_runner, get_workbench, running, token_utils
-from thonny import is_portable
+from thonny import (
+    editors,
+    get_runner,
+    get_workbench,
+    is_portable,
+    running,
+    token_utils,
+)
 from thonny.common import BackendEvent
 from thonny.languages import tr
 from thonny.running import Runner
 from thonny.shell import BaseShellText
 
-from .about_plugin import add_about_py5mode_command, open_about_plugin
+from .about_plugin import add_about_py5mode_command
 from .install_jdk import install_jdk
-
-from thonny import get_sys_path_directory_containg_plugins
 
 # modified tkcolorpicker (by j4321) to work with thonny for macos
 # now vendored on this same repo
 from .py5colorpicker.tkcolorpicker import modeless_colorpicker
+
 color_selector_open = False
 
 _PY5_IMPORTED_MODE = "run.py5_imported_mode"
 _PY5_LIVE_CODING = "run.py5_live_coding"
+
 
 def apply_recommended_py5_config() -> None:
     """apply some recommended settings for thonny py5 work"""
@@ -53,6 +55,10 @@ def apply_recommended_py5_config() -> None:
 def execute_imported_mode() -> None:
     """run imported mode script using py5_tools run_sketch"""
     current_editor = get_workbench().get_editor_notebook().get_current_editor()
+    if current_editor is None:
+        showerror("Editor Window Not Found")
+        return
+
     current_file = current_editor.get_filename()
 
     if current_file is None:
@@ -65,7 +71,12 @@ def execute_imported_mode() -> None:
         current_editor.save_file()
         user_packages = str(site.getusersitepackages())
         site_packages = str(site.getsitepackages()[0])
-        plug_packages = util.find_spec("py5_tools").submodule_search_locations
+        py5_tools_spec = util.find_spec("py5_tools")
+        if py5_tools_spec is None:
+            showerror("Python package py5_tools not available")
+            return
+        else:
+            plug_packages = py5_tools_spec.submodule_search_locations or [""]
         run_sketch_locations = [
             pathlib.Path(user_packages + "/py5_tools/tools/run_sketch.py"),
             pathlib.Path(site_packages + "/py5_tools/tools/run_sketch.py"),
@@ -73,11 +84,16 @@ def execute_imported_mode() -> None:
             pathlib.Path(get_python_lib() + "/py5_tools/tools/run_sketch.py"),
         ]
 
+        run_sketch = None
         for location in run_sketch_locations:
             # if location matches py5_tools path, use it
             if location.is_file():
                 run_sketch = location
                 break
+
+        if run_sketch is None:
+            showerror("Python package py5_tools not available")
+            return
 
         # set switch so Sketch will report window location
         py5_switches = "--py5_options external"
@@ -124,7 +140,7 @@ def update_run_patching() -> None:
 
     if imported_mode:
         if not hasattr(Runner, "_original_execute_current"):
-            Runner._original_execute_current = Runner.execute_current
+            Runner._original_execute_current = Runner.execute_current  # type: ignore
         Runner.execute_current = patched_execute_imported_mode
         try:
             get_runner().restart_backend(False)
@@ -132,7 +148,7 @@ def update_run_patching() -> None:
             pass
     elif live_coding:
         if not hasattr(Runner, "_original_execute_current"):
-            Runner._original_execute_current = Runner.execute_current
+            Runner._original_execute_current = Runner.execute_current  # type: ignore
         Runner.execute_current = patched_execute_live_coding
         try:
             get_runner().restart_backend(False)
@@ -140,7 +156,7 @@ def update_run_patching() -> None:
             pass
     else:
         if hasattr(Runner, "_original_execute_current"):
-            Runner.execute_current = Runner._original_execute_current
+            Runner.execute_current = Runner._original_execute_current  # type: ignore
             try:
                 get_runner().restart_backend(False)
             except AttributeError:
@@ -149,9 +165,14 @@ def update_run_patching() -> None:
 
 def patch_token_coloring() -> None:
     """add py5 keywords to syntax highlighting"""
-    spec = util.find_spec("py5_tools")
+    py5_tools_spec = util.find_spec("py5_tools")
+    if py5_tools_spec is None:
+        showerror("Python package py5_tools not available")
+        return
+    else:
+        spec_search_locations = py5_tools_spec.submodule_search_locations or [""]
     # cannot use `dir(py5)` because of jvm check, hence direct loading
-    path = pathlib.Path(spec.submodule_search_locations[0]) / "reference.py"
+    path = pathlib.Path(spec_search_locations[0]) / "reference.py"
     loader = machinery.SourceFileLoader("py5_tools_reference", str(path))
     module = types.ModuleType(loader.name)
     loader.exec_module(module)
@@ -195,6 +216,10 @@ def convert_code(translator) -> None:
     """function to handle different py5_tools conversions"""
     workbench = get_workbench()
     current_editor = workbench.get_editor_notebook().get_current_editor()
+    if current_editor is None:
+        showerror("Editor Window Not Found")
+        return
+
     current_file = current_editor.get_filename()
 
     if current_file is None:
@@ -222,12 +247,16 @@ def patched_handle_program_output(self, msg: BackendEvent) -> None:
         return
 
     # print the rest of the shell output as usual
-    BaseShellText._original_handle_program_output(self, msg)
+    BaseShellText._original_handle_program_output(self, msg)  # type: ignore
 
 
 def show_sketch_folder() -> None:
     """open the enclosing folder of the current file"""
     current_editor = get_workbench().get_editor_notebook().get_current_editor()
+    if current_editor is None:
+        showerror("Editor Window Not Found")
+        return
+
     # check if the editor is empty/blank
     try:
         filename = current_editor.get_filename()
@@ -236,7 +265,7 @@ def show_sketch_folder() -> None:
         return
     # check if the file isn't an <untitled> (yet to be saved) file
     try:
-        path = os.path.dirname(filename)
+        path = os.path.dirname(filename)  # type: ignore
     except TypeError:
         showerror("File not found", "Have you saved your file somewhere yet?")
         return
@@ -252,6 +281,10 @@ def show_sketch_folder() -> None:
 def execute_live_coding() -> None:
     """run py5 live-coding tool with the current file via the shell"""
     current_editor = get_workbench().get_editor_notebook().get_current_editor()
+    if current_editor is None:
+        showerror("Editor Window Not Found")
+        return
+
     current_file = current_editor.get_filename()
 
     if current_file is None:
@@ -262,7 +295,12 @@ def execute_live_coding() -> None:
         current_editor.save_file()
         user_packages = str(site.getusersitepackages())
         site_packages = str(site.getsitepackages()[0])
-        plug_packages = util.find_spec("py5_tools").submodule_search_locations
+        py5_tools_spec = util.find_spec("py5_tools")
+        if py5_tools_spec is None:
+            showerror("Python package py5_tools not available")
+            return
+        else:
+            plug_packages = py5_tools_spec.submodule_search_locations or [""]
         live_coding_locations = [
             pathlib.Path(user_packages + "/py5_tools/tools/live_coding.py"),
             pathlib.Path(site_packages + "/py5_tools/tools/live_coding.py"),
@@ -270,10 +308,15 @@ def execute_live_coding() -> None:
             pathlib.Path(get_python_lib() + "/py5_tools/tools/live_coding.py"),
         ]
 
+        live_coding = None
         for location in live_coding_locations:
             if location.is_file():
                 live_coding = location
                 break
+
+        if live_coding is None:
+            showerror("Python package py5_tools not available")
+            return
 
         working_directory = os.path.dirname(current_file)
         cd_cmd_line = running.construct_cd_command(working_directory) + "\n"
@@ -311,7 +354,7 @@ def load_plugin() -> None:
         "py5_reference",
         "py5",
         tr("py5 reference"),
-        lambda: webbrowser.open("https://py5coding.org/reference/"),
+        lambda: webbrowser.open("https://py5coding.org/reference/"),  # type: ignore
         group=30,
     )
 
@@ -321,7 +364,7 @@ def load_plugin() -> None:
         "py5_quickreference",
         "py5",
         tr("py5 quick reference"),
-        lambda: webbrowser.open(git_raw_url + quick_reference_pdf),
+        lambda: webbrowser.open(git_raw_url + quick_reference_pdf),  # type: ignore
         group=30,
     )
     get_workbench().add_command(
@@ -340,14 +383,13 @@ def load_plugin() -> None:
     add_about_py5mode_command(50)
     patch_token_coloring()
     update_run_patching()
-    
+
     if is_portable():  # if this plug-in is running Thonny portable
-        # it should update the JDK path on every run, in case the Thonny folder is moved. 
+        # it should update the JDK path on every run, in case the Thonny folder is moved.
         install_jdk()
 
     # note that _handle_program_output is not a public api
     # may need to treat different thonny versions differently
     h_p_o = BaseShellText._handle_program_output
-    BaseShellText._original_handle_program_output = h_p_o
+    BaseShellText._original_handle_program_output = h_p_o  # type: ignore
     BaseShellText._handle_program_output = patched_handle_program_output
-
