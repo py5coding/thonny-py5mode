@@ -1,1 +1,1 @@
-__version__ = "0.5.0dev+livecoding"
+__version__ = "0.5.0"
